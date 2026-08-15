@@ -8,7 +8,7 @@ from aiohttp import web
 
 # ==================== НАСТРОЙКИ ====================
 BOT_TOKEN = "8834233399:AAFw-byiVENh_IXXasYCzHP0wSHPILfH18M"
-GROUP_ID = -1004349808073  # ID твоей группы
+GROUP_ID = -1004487553351  # ID твоей группы
 ADMIN_ID = 1061986288      # Твой Telegram ID
 EXAMPLE_PHOTO_PATH = "example.jpg"  # Файл с примером кабинета в папке проекта
 # ===================================================
