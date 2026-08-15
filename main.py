@@ -156,14 +156,16 @@ async def handle_text(message: types.Message):
     )
 
     await message.answer("Дякуємо! Ваше повідомлення надіслано на перевірку. Чекайте на рішення.")
-
 # 5. Одобрение заявки админом
 @dp.callback_query(F.data.startswith("approve:"))
 async def approve_user(callback: types.CallbackQuery):
     user_id = int(callback.data.split(":")[1])
 
     try:
+        # Пробуем одобрить заявку в Telegram
         await bot.approve_chat_join_request(chat_id=GROUP_ID, user_id=user_id)
+        
+        # Отправляем сообщение человеку в ЛС
         try:
             await bot.send_message(
                 chat_id=user_id,
@@ -171,34 +173,30 @@ async def approve_user(callback: types.CallbackQuery):
             )
         except Exception:
             pass
+
+        # Обновляем сообщение у админа
+        if callback.message.caption:
+            await callback.message.edit_caption(
+                caption=callback.message.caption + "\n\n✅ <b>ОДОБРЕНО</b>",
+                reply_markup=None,
+                parse_mode="HTML"
+            )
+        else:
+            await callback.message.edit_text(
+                text=callback.message.text + "\n\n✅ <b>ОДОБРЕНО</b>",
+                reply_markup=None,
+                parse_mode="HTML"
+            )
+
+        await callback.answer("Успешно одобрено!")
+
     except Exception:
-        try:
-            invite_link = await bot.create_chat_invite_link(
-                chat_id=GROUP_ID,
-                member_limit=1
-            )
-            await bot.send_message(
-                chat_id=user_id,
-                text=f"🎉 Ваша заявка схвалена! Ось ваше особисте посилання для входу в групу:\n{invite_link.invite_link}"
-            )
-        except Exception as e:
-            await callback.answer(f"⚠️ Не вдалося надіслати посилання: {e}", show_alert=True)
-            return
-
-    if callback.message.caption:
-        await callback.message.edit_caption(
-            caption=callback.message.caption + "\n\n✅ <b>ОДОБРЕНО</b>",
-            reply_markup=None,
-            parse_mode="HTML"
-        )
-    else:
-        await callback.message.edit_text(
-            text=callback.message.text + "\n\n✅ <b>ОДОБРЕНО</b>",
-            reply_markup=None,
-            parse_mode="HTML"
+        # Если активной заявки нет в Telegram
+        await callback.answer(
+            "⚠️ Активной заявки в группу нет! Возможно, пользователь не нажал 'Запросить вступление' в самом канале.",
+            show_alert=True
         )
 
-    await callback.answer("Успешно одобрено!")
 
 # 6. Отклонение заявки админом
 @dp.callback_query(F.data.startswith("decline:"))
@@ -208,12 +206,12 @@ async def decline_user(callback: types.CallbackQuery):
     try:
         await bot.decline_chat_join_request(chat_id=GROUP_ID, user_id=user_id)
     except Exception:
-        pass
+        pass  # Если заявки не было, просто игнорируем ошибку
 
     try:
         await bot.send_message(
             chat_id=user_id,
-            text="❌ На жаль, ваша заявка відхилена, перевірте чи все правильно на фото."
+            text="❌ На жаль, ваша заявка відхилена."
         )
     except Exception:
         pass
